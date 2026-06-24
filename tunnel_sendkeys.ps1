@@ -1,19 +1,20 @@
 # PowerShell script to automate SSH tunneling with password inputs
 # This script automatically inputs the password after launching SSH.
 
-# JSON 설정 파일 로드
+# Load JSON configuration file
 $ConfigFile = Join-Path $PSScriptRoot "tunnel_config.json"
 if (-not (Test-Path $ConfigFile)) {
-    Write-Error "설정 파일을 찾을 수 없습니다: $ConfigFile"
+    Write-Error "Configuration file not found: $ConfigFile"
     Exit
 }
 
-# UTF-8 파일 읽기 및 JSON 변환
-$Configs = Get-Content -Raw -Path $ConfigFile -Encoding utf8 | ConvertFrom-Json
+# Read file and convert JSON
+$RawContent = Get-Content -Raw -Path $ConfigFile
+$Configs = $RawContent | ConvertFrom-Json
 $EnabledConfigs = $Configs | Where-Object { $_.Enabled -eq $true }
 
 if ($null -eq $EnabledConfigs -or $EnabledConfigs.Count -eq 0) {
-    Write-Host "[SSH Tunneling] 활성화(Enabled: true)된 터널링 설정이 없습니다. 설정 파일을 확인하세요." -ForegroundColor Yellow
+    Write-Host "[SSH Tunneling] No enabled (Enabled: true) configurations found. Please check tunnel_config.json." -ForegroundColor Yellow
     Exit
 }
 
@@ -27,7 +28,7 @@ foreach ($Target in $EnabledConfigs) {
     $JumpPassword = $Target.JumpPassword
     $EnvName = $Target.EnvName
 
-    # 1. 포트 옵션 동적 생성
+    # 1. Dynamic port arguments generation
     $PortArguments = ""
     if ($Target.Ports) {
         foreach ($Port in $Target.Ports) {
@@ -35,7 +36,7 @@ foreach ($Target in $EnabledConfigs) {
         }
     }
 
-    # 2. Jump Host 경유 여부에 따른 SSH 명령어 생성 분기
+    # 2. Command branch based on Jump Host availability
     $HasJumpHost = -not [string]::IsNullOrEmpty($JumpHost)
     if ($HasJumpHost) {
         $SshCommand = "ssh -J $JumpHost$PortArguments $RemoteHost"
@@ -55,8 +56,7 @@ foreach ($Target in $EnabledConfigs) {
     Start-Sleep -Milliseconds 3000
 
     if ($HasJumpHost) {
-        # [점프 호스트가 존재하는 경우 - 2단계 패스워드 입력]
-        # Focus the window and enter the 1st password (Jump Host)
+        # [Jump Host exists - 2-step password input]
         Write-Host "  -> Entering 1st password (Jump Host)..." -ForegroundColor Yellow
         $null = $WScriptShell.AppActivate($SshPid)
         $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
@@ -64,10 +64,10 @@ foreach ($Target in $EnabledConfigs) {
         $WScriptShell.SendKeys($JumpPassword)
         $WScriptShell.SendKeys("{ENTER}")
 
-        # Wait for the target server password prompt to appear
+        # Wait for the target server password prompt
         Start-Sleep -Milliseconds 3000
 
-        # Focus the window and enter the 2nd password (Target Host)
+        # Focus and enter the 2nd password (Target Host)
         Write-Host "  -> Entering 2nd password (Target Host)..." -ForegroundColor Yellow
         $null = $WScriptShell.AppActivate($SshPid)
         $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
@@ -75,8 +75,7 @@ foreach ($Target in $EnabledConfigs) {
         $WScriptShell.SendKeys($RemotePassword)
         $WScriptShell.SendKeys("{ENTER}")
     } else {
-        # [점프 호스트가 없는 경우 - 직접 연결, 1단계 패스워드 입력]
-        # Focus the window and enter the password (Target Host)
+        # [Direct connection - 1-step password input]
         Write-Host "  -> Entering password (Target Host)..." -ForegroundColor Yellow
         $null = $WScriptShell.AppActivate($SshPid)
         $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
@@ -88,6 +87,6 @@ foreach ($Target in $EnabledConfigs) {
     Write-Host "[SSH Tunneling] Auto-input complete for [$EnvName]!" -ForegroundColor Green
     Write-Host "--------------------------------------------------" -ForegroundColor Gray
 
-    # 여러 환경을 동시에 띄울 때 키 입력 포커스 충돌을 방지하기 위한 대기시간
+    # Wait before starting the next tunnel to avoid focus conflicts
     Start-Sleep -Seconds 2
 }
