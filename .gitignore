@@ -4,3 +4,4 @@ CE_Tunnel_batch/tunnel_config.json
 
 # 불필요한 빌드/압축 파일
 *.zip
+dist/
