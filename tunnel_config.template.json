@@ -7,29 +7,35 @@
     "RemotePassword": "your_remote_password_here",
     "JumpHost": "your_jump_host@your_jump_ip",
     "JumpPassword": "your_jump_password_here",
-    "LocalPort1": "8090",
-    "LocalPort2": "8082"
+    "Ports": [
+      "8090",
+      "8082"
+    ]
   },
   {
     "Env": "qa",
-    "EnvName": "품질(QA)",
+    "EnvName": "품질(QA - 직접 연결 예시)",
     "Enabled": false,
     "RemoteHost": "your_remote_host@your_qa_remote_ip",
     "RemotePassword": "your_qa_password_here",
-    "JumpHost": "your_jump_host@your_qa_jump_ip",
-    "JumpPassword": "your_qa_password_here",
-    "LocalPort1": "8091",
-    "LocalPort2": "8083"
+    "JumpHost": "",
+    "JumpPassword": "",
+    "Ports": [
+      "8091"
+    ]
   },
   {
     "Env": "prod",
-    "EnvName": "운영(Production)",
+    "EnvName": "운영(Production - 다중 포트 예시)",
     "Enabled": false,
     "RemoteHost": "your_remote_host@your_prod_remote_ip",
     "RemotePassword": "your_prod_password_here",
     "JumpHost": "your_jump_host@your_prod_jump_ip",
     "JumpPassword": "your_prod_password_here",
-    "LocalPort1": "8092",
-    "LocalPort2": "8084"
+    "Ports": [
+      "8092",
+      "8084",
+      "3306"
+    ]
   }
 ]

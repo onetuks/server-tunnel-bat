@@ -21,16 +21,27 @@ if ($null -eq $EnabledConfigs -or $EnabledConfigs.Count -eq 0) {
 $WScriptShell = New-Object -ComObject wscript.shell
 
 foreach ($Target in $EnabledConfigs) {
-    $JumpPassword = $Target.JumpPassword
-    $RemotePassword = $Target.RemotePassword
     $RemoteHost = $Target.RemoteHost
+    $RemotePassword = $Target.RemotePassword
     $JumpHost = $Target.JumpHost
-    $LocalPort1 = $Target.LocalPort1
-    $LocalPort2 = $Target.LocalPort2
+    $JumpPassword = $Target.JumpPassword
     $EnvName = $Target.EnvName
 
-    # 1. Combine two tunneling ports into a single SSH connection.
-    $SshCommand = "ssh -J $JumpHost -L ${LocalPort1}:localhost:${LocalPort1} -L ${LocalPort2}:localhost:${LocalPort2} $RemoteHost"
+    # 1. 포트 옵션 동적 생성
+    $PortArguments = ""
+    if ($Target.Ports) {
+        foreach ($Port in $Target.Ports) {
+            $PortArguments += " -L ${Port}:localhost:${Port}"
+        }
+    }
+
+    # 2. Jump Host 경유 여부에 따른 SSH 명령어 생성 분기
+    $HasJumpHost = -not [string]::IsNullOrEmpty($JumpHost)
+    if ($HasJumpHost) {
+        $SshCommand = "ssh -J $JumpHost$PortArguments $RemoteHost"
+    } else {
+        $SshCommand = "ssh$PortArguments $RemoteHost"
+    }
 
     Write-Host "[SSH Tunneling] Starting tunneling process for [$EnvName]..." -ForegroundColor Cyan
     Write-Host "Command: $SshCommand" -ForegroundColor Gray
@@ -43,24 +54,36 @@ foreach ($Target in $EnabledConfigs) {
     Write-Host "  -> Launching SSH window..." -ForegroundColor Cyan
     Start-Sleep -Milliseconds 3000
 
-    # Focus the window and enter the 1st password (Jump Host)
-    Write-Host "  -> Entering 1st password (Jump Host)..." -ForegroundColor Yellow
-    $null = $WScriptShell.AppActivate($SshPid)
-    $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
-    Start-Sleep -Milliseconds 500
-    $WScriptShell.SendKeys($JumpPassword)
-    $WScriptShell.SendKeys("{ENTER}")
+    if ($HasJumpHost) {
+        # [점프 호스트가 존재하는 경우 - 2단계 패스워드 입력]
+        # Focus the window and enter the 1st password (Jump Host)
+        Write-Host "  -> Entering 1st password (Jump Host)..." -ForegroundColor Yellow
+        $null = $WScriptShell.AppActivate($SshPid)
+        $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
+        Start-Sleep -Milliseconds 500
+        $WScriptShell.SendKeys($JumpPassword)
+        $WScriptShell.SendKeys("{ENTER}")
 
-    # Wait for the target server password prompt to appear
-    Start-Sleep -Milliseconds 3000
+        # Wait for the target server password prompt to appear
+        Start-Sleep -Milliseconds 3000
 
-    # Focus the window and enter the 2nd password (Target Host)
-    Write-Host "  -> Entering 2nd password (Target Host)..." -ForegroundColor Yellow
-    $null = $WScriptShell.AppActivate($SshPid)
-    $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
-    Start-Sleep -Milliseconds 500
-    $WScriptShell.SendKeys($RemotePassword)
-    $WScriptShell.SendKeys("{ENTER}")
+        # Focus the window and enter the 2nd password (Target Host)
+        Write-Host "  -> Entering 2nd password (Target Host)..." -ForegroundColor Yellow
+        $null = $WScriptShell.AppActivate($SshPid)
+        $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
+        Start-Sleep -Milliseconds 500
+        $WScriptShell.SendKeys($RemotePassword)
+        $WScriptShell.SendKeys("{ENTER}")
+    } else {
+        # [점프 호스트가 없는 경우 - 직접 연결, 1단계 패스워드 입력]
+        # Focus the window and enter the password (Target Host)
+        Write-Host "  -> Entering password (Target Host)..." -ForegroundColor Yellow
+        $null = $WScriptShell.AppActivate($SshPid)
+        $null = $WScriptShell.AppActivate("SSH Tunnel Window ($EnvName)")
+        Start-Sleep -Milliseconds 500
+        $WScriptShell.SendKeys($RemotePassword)
+        $WScriptShell.SendKeys("{ENTER}")
+    }
 
     Write-Host "[SSH Tunneling] Auto-input complete for [$EnvName]!" -ForegroundColor Green
     Write-Host "--------------------------------------------------" -ForegroundColor Gray
