@@ -1,0 +1,35 @@
+[
+  {
+    "Env": "dev",
+    "EnvName": "개발(Development)",
+    "Enabled": true,
+    "RemoteHost": "your_remote_host@your_remote_ip",
+    "RemotePassword": "your_remote_password_here",
+    "JumpHost": "your_jump_host@your_jump_ip",
+    "JumpPassword": "your_jump_password_here",
+    "LocalPort1": "8090",
+    "LocalPort2": "8082"
+  },
+  {
+    "Env": "qa",
+    "EnvName": "품질(QA)",
+    "Enabled": false,
+    "RemoteHost": "your_remote_host@your_qa_remote_ip",
+    "RemotePassword": "your_qa_password_here",
+    "JumpHost": "your_jump_host@your_qa_jump_ip",
+    "JumpPassword": "your_qa_password_here",
+    "LocalPort1": "8091",
+    "LocalPort2": "8083"
+  },
+  {
+    "Env": "prod",
+    "EnvName": "운영(Production)",
+    "Enabled": false,
+    "RemoteHost": "your_remote_host@your_prod_remote_ip",
+    "RemotePassword": "your_prod_password_here",
+    "JumpHost": "your_jump_host@your_prod_jump_ip",
+    "JumpPassword": "your_prod_password_here",
+    "LocalPort1": "8092",
+    "LocalPort2": "8084"
+  }
+]
